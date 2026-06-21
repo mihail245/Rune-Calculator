@@ -1,32 +1,94 @@
-<!doctype html>
-<html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <link rel="icon" href="/Noob-Incremental-Rune-Calculator/Images/icon.ico" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>NI Rune Calculator</title>
-  
-    <!-- Google tag (gtag.js) -->
-    <script async src="https://www.googletagmanager.com/gtag/js?id=G-NE87J64S5R"></script>
-    <script>
-      window.dataLayer = window.dataLayer || [];
-      function gtag(){dataLayer.push(arguments);}
-      gtag('js', new Date());
-  
-      gtag('config', 'G-NE87J64S5R');
-    </script>
-  </head>
-  <body>
-    <div id="root">
-      <main style="min-height:100vh;background:#05080d;color:#e5edf6;font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;display:flex;align-items:center;justify-content:center;padding:24px;">
-        <section style="max-width:640px;border:1px solid rgba(103,232,249,.25);background:rgba(8,47,73,.22);border-radius:8px;padding:20px;box-shadow:0 20px 60px rgba(0,0,0,.35);">
-          <h1 style="margin:0 0 8px;font-size:20px;">Loading NI Rune Calculator...</h1>
-          <p style="margin:0;color:#cbd5e1;line-height:1.55;">
-            If this stays visible and the browser console shows a <code>main.tsx</code> 404, GitHub Pages is serving the source files instead of the built site. Set Pages to deploy from GitHub Actions, or run <code>npm run build</code> and deploy the <code>dist</code> folder.
-          </p>
-        </section>
-      </main>
-    </div>
-    <script type="module" src="/src/main.tsx"></script>
-  </body>
+<!DOCTYPE html>
+<html>
+<head>
+  <style>
+    body { font-family: Arial; padding: 20px; max-width: 400px; margin: auto; }
+    .param { margin: 15px 0; }
+    input[type="range"] { width: 180px; }
+    .value { font-weight: bold; margin-left: 10px; }
+    .boost { margin-left: 20px; }
+    #rps { font-size: 28px; color: #d4a017; margin: 20px 0; }
+    #rating { font-size: 20px; color: #2e7d32; }
+  </style>
+</head>
+<body>
+  <h2>RPS Калькулятор</h2>
+
+  <!-- Rune Bulk -->
+  <div class="param">
+    <label>Rune Bulk: 
+      <input type="range" id="bulk" min="1" max="100" value="50" oninput="calc()">
+      <span class="value" id="bulkVal">50</span>
+    </label>
+    <br>
+    <label class="boost">
+      <input type="checkbox" id="bulkBoost" onchange="calc()"> Зелье Bulk x2
+    </label>
+  </div>
+
+  <!-- Rune Speed (время в секундах) -->
+  <div class="param">
+    <label>Rune Speed (сек): 
+      <input type="range" id="speed" min="1" max="20" value="5" step="0.5" oninput="calc()">
+      <span class="value" id="speedVal">5.0</span>
+    </label>
+    <br>
+    <label class="boost">
+      <input type="checkbox" id="speedBoost" onchange="calc()"> Зелье Speed x2
+    </label>
+  </div>
+
+  <!-- Rune Luck -->
+  <div class="param">
+    <label>Rune Luck (%): 
+      <input type="range" id="luck" min="0" max="100" value="20" oninput="calc()">
+      <span class="value" id="luckVal">20</span>
+    </label>
+    <br>
+    <label class="boost">
+      <input type="checkbox" id="luckBoost" onchange="calc()"> Зелье Luck x2
+    </label>
+  </div>
+
+  <hr>
+
+  <div id="rps">⚡ RPS: 0.00</div>
+  <div id="rating">⭐ Эффективность (с удачей): 0.00</div>
+
+  <script>
+    function calc() {
+      // --- Считываем значения ---
+      let bulk = parseFloat(document.getElementById('bulk').value);
+      let speed = parseFloat(document.getElementById('speed').value);
+      let luck = parseFloat(document.getElementById('luck').value);
+
+      // --- Бусты (x2) ---
+      let bulkBoost = document.getElementById('bulkBoost').checked ? 2 : 1;
+      let speedBoost = document.getElementById('speedBoost').checked ? 2 : 1;
+      let luckBoost = document.getElementById('luckBoost').checked ? 2 : 1;
+
+      // --- Применяем бусты ---
+      let finalBulk = bulk * bulkBoost;
+      let finalSpeed = speed / speedBoost;  // скорость улучшается (делится)
+      let finalLuck = luck * luckBoost;
+
+      // --- RPS = Bulk / Speed (чем больше Speed, тем хуже) ---
+      let rps = finalBulk / finalSpeed;
+
+      // --- Итоговый рейтинг с учётом удачи (как бонус к эффективности) ---
+      // Удача даёт +X% к RPS (например, 20% удачи = +20% к результату)
+      let rating = rps * (1 + finalLuck / 100);
+
+      // --- Отображаем ---
+      document.getElementById('bulkVal').textContent = finalBulk;
+      document.getElementById('speedVal').textContent = finalSpeed.toFixed(1);
+      document.getElementById('luckVal').textContent = finalLuck;
+
+      document.getElementById('rps').textContent = '⚡ RPS: ' + rps.toFixed(2);
+      document.getElementById('rating').textContent = '⭐ Эффективность (с удачей): ' + rating.toFixed(2);
+    }
+
+    calc();
+  </script>
+</body>
 </html>
