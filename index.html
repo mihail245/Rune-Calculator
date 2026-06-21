@@ -2,90 +2,196 @@
 <html>
 <head>
   <style>
-    body { font-family: Arial; padding: 20px; max-width: 400px; margin: auto; }
-    .param { margin: 15px 0; }
-    input[type="range"] { width: 180px; }
-    .value { font-weight: bold; margin-left: 10px; }
+    body { font-family: Arial; padding: 20px; max-width: 750px; margin: auto; background: #1a1a2e; color: #eee; }
+    .param { margin: 15px 0; background: #16213e; padding: 15px; border-radius: 10px; }
+    input[type="range"] { width: 150px; vertical-align: middle; }
+    input[type="number"] { width: 80px; padding: 5px; background: #0f3460; color: #fff; border: 1px solid #533483; border-radius: 5px; }
+    .value { font-weight: bold; margin-left: 10px; color: #e94560; }
     .boost { margin-left: 20px; }
-    #rps { font-size: 28px; color: #d4a017; margin: 20px 0; }
-    #rating { font-size: 20px; color: #2e7d32; }
+    #rps { font-size: 32px; color: #f5c842; margin: 20px 0; }
+    #rating { font-size: 22px; color: #4ecca3; }
+    .rune-table { width: 100%; border-collapse: collapse; margin-top: 20px; font-size: 14px; }
+    .rune-table th { background: #533483; padding: 8px; text-align: left; }
+    .rune-table td { padding: 8px; border-bottom: 1px solid #333; }
+    .rune-table tr:hover { background: #16213e; }
+    .rune-name { color: #f5c842; font-weight: bold; }
+    .rune-time { color: #4ecca3; }
+    .rune-rarity { color: #aaa; }
+    .manual-input { display: flex; gap: 10px; flex-wrap: wrap; }
+    .rank { color: #ff6b6b; font-size: 12px; }
   </style>
 </head>
 <body>
-  <h2>RPS Калькулятор</h2>
+  <h1>🔮 Rune Drop Calculator</h1>
 
-  <!-- Rune Bulk -->
   <div class="param">
-    <label>Rune Bulk: 
-      <input type="range" id="bulk" min="1" max="100" value="50" oninput="calc()">
-      <span class="value" id="bulkVal">50</span>
-    </label>
+    <h3>Ваши параметры</h3>
+    <div class="manual-input">
+      <label>Bulk: <input type="number" id="bulkInput" value="50" min="0" step="1" oninput="calc()"></label>
+      <label>Speed (сек): <input type="number" id="speedInput" value="5" min="0.1" step="0.1" oninput="calc()"></label>
+      <label>Luck (%): <input type="number" id="luckInput" value="20" min="0" step="1" oninput="calc()"></label>
+    </div>
     <br>
-    <label class="boost">
-      <input type="checkbox" id="bulkBoost" onchange="calc()"> Зелье Bulk x2
-    </label>
+    <label class="boost"><input type="checkbox" id="bulkBoost" onchange="calc()"> Зелье Bulk x2</label>
+    <label class="boost"><input type="checkbox" id="speedBoost" onchange="calc()"> Зелье Speed x2</label>
+    <label class="boost"><input type="checkbox" id="luckBoost" onchange="calc()"> Зелье Luck x2</label>
   </div>
-
-  <!-- Rune Speed (время в секундах) -->
-  <div class="param">
-    <label>Rune Speed (сек): 
-      <input type="range" id="speed" min="1" max="20" value="5" step="0.5" oninput="calc()">
-      <span class="value" id="speedVal">5.0</span>
-    </label>
-    <br>
-    <label class="boost">
-      <input type="checkbox" id="speedBoost" onchange="calc()"> Зелье Speed x2
-    </label>
-  </div>
-
-  <!-- Rune Luck -->
-  <div class="param">
-    <label>Rune Luck (%): 
-      <input type="range" id="luck" min="0" max="100" value="20" oninput="calc()">
-      <span class="value" id="luckVal">20</span>
-    </label>
-    <br>
-    <label class="boost">
-      <input type="checkbox" id="luckBoost" onchange="calc()"> Зелье Luck x2
-    </label>
-  </div>
-
-  <hr>
 
   <div id="rps">⚡ RPS: 0.00</div>
-  <div id="rating">⭐ Эффективность (с удачей): 0.00</div>
+  <div id="rating">⭐ Эффективность: 0.00</div>
+
+  <h2>📊 Время до выпадения рун</h2>
+  <table class="rune-table" id="runeTable">
+    <thead><tr><th>Ранг</th><th>Руна</th><th>Порог</th><th>Время выпадения</th></tr></thead>
+    <tbody id="runeBody"></tbody>
+  </table>
 
   <script>
-    function calc() {
-      // --- Считываем значения ---
-      let bulk = parseFloat(document.getElementById('bulk').value);
-      let speed = parseFloat(document.getElementById('speed').value);
-      let luck = parseFloat(document.getElementById('luck').value);
+    // --- Ваши руны с порогами ---
+    const RUNES = [
+  { name: 'Rookie', threshold: 1 / 1.25, rank: 1 },
+  { name: 'Learner', threshold: 1 / 6.67, rank: 2 },
+  { name: 'Trained', threshold: 1 / 10, rank: 3 },
+  { name: 'Skilled', threshold: 1 / 10, rank: 4 },
+  { name: 'Expert', threshold: 1 / 10, rank: 5 },
+  { name: 'Master', threshold: 1 / 10, rank: 6 },
+  { name: 'Grandmaster', threshold: 1 / 10, rank: 7 },
+  { name: 'Celestial', threshold: 1 / 10, rank: 8 },
+  { name: 'Immortal', threshold: 1 / 115.99e9, rank: 9 },        // 115.99B
+  { name: 'Shadow', threshold: 1 / 10e21, rank: 10 },            // 10Sx
+  { name: 'Phantom', threshold: 1 / 100e27, rank: 11 },          // 100Oc (исправлено)
+  { name: 'Atomic', threshold: 1 / 1.33e57, rank: 12 },          // 1.33QnDe
+];
+    // --- Функция форматирования с суффиксами ---
+    function formatNumber(num) {
+      if (num === Infinity || !isFinite(num)) return '∞';
+      if (num < 0) return '-' + formatNumber(-num);
+      if (num === 0) return '0';
+      
+      const suffixes = [
+        { value: 1e60, suffix: 'NoDe' },
+        { value: 1e57, suffix: 'OcDe' },
+        { value: 1e54, suffix: 'SpDe' },
+        { value: 1e51, suffix: 'SxDe' },
+        { value: 1e48, suffix: 'QnDe' },
+        { value: 1e45, suffix: 'QdDe' },
+        { value: 1e42, suffix: 'TDe' },
+        { value: 1e39, suffix: 'DDe' },
+        { value: 1e36, suffix: 'UDe' },
+        { value: 1e33, suffix: 'De' },
+        { value: 1e30, suffix: 'No' },
+        { value: 1e27, suffix: 'Oc' },
+        { value: 1e24, suffix: 'Sp' },
+        { value: 1e21, suffix: 'Sx' },
+        { value: 1e18, suffix: 'Qn' },
+        { value: 1e15, suffix: 'Qd' },
+        { value: 1e12, suffix: 'T' },
+        { value: 1e9, suffix: 'B' },
+        { value: 1e6, suffix: 'M' },
+        { value: 1e3, suffix: 'K' },
+      ];
 
-      // --- Бусты (x2) ---
+      if (num < 1000) {
+        if (Number.isInteger(num)) return num.toString();
+        return num.toFixed(2);
+      }
+
+      for (let s of suffixes) {
+        if (num >= s.value) {
+          let val = num / s.value;
+          if (val < 10) return val.toFixed(2) + ' ' + s.suffix;
+          if (val < 100) return val.toFixed(1) + ' ' + s.suffix;
+          return Math.floor(val) + ' ' + s.suffix;
+        }
+      }
+      return num.toExponential(2);
+    }
+
+    // --- Форматирование времени ---
+    function formatTime(seconds) {
+      if (!isFinite(seconds) || seconds === Infinity) return '∞';
+      if (seconds < 1) return (seconds * 1000).toFixed(1) + ' мс';
+      if (seconds < 60) return seconds.toFixed(2) + ' сек';
+      if (seconds < 3600) return (seconds / 60).toFixed(2) + ' мин';
+      if (seconds < 86400) return (seconds / 3600).toFixed(2) + ' ч';
+      if (seconds < 31536000) return (seconds / 86400).toFixed(2) + ' д';
+      if (seconds < 3153600000) return (seconds / 31536000).toFixed(2) + ' лет';
+      return (seconds / 31536000).toExponential(2) + ' лет';
+    }
+
+    // --- Парсинг порогов из строки (если нужно) ---
+    function parseThreshold(str) {
+      str = str.toString().trim();
+      // Обработка 1/10
+      if (str.includes('/')) {
+        let parts = str.split('/');
+        return parseFloat(parts[0]) / parseFloat(parts[1]);
+      }
+      // Обработка 1.33QnDe
+      const suffixes = {
+        'K': 1e3, 'M': 1e6, 'B': 1e9, 'T': 1e12,
+        'Qd': 1e15, 'Qn': 1e18, 'Sx': 1e21, 'Sp': 1e24,
+        'Oc': 1e27, 'No': 1e30, 'De': 1e33,
+        'UDe': 1e36, 'DDe': 1e39, 'TDe': 1e42,
+        'QdDe': 1e45, 'QnDe': 1e48, 'SxDe': 1e51,
+        'SpDe': 1e54, 'OcDe': 1e57, 'NoDe': 1e60
+      };
+      
+      let match = str.match(/^([\d.]+)\s*([A-Za-z]+)$/);
+      if (match) {
+        let num = parseFloat(match[1]);
+        let suffix = match[2];
+        if (suffixes[suffix]) return num * suffixes[suffix];
+      }
+      return parseFloat(str);
+    }
+
+    // --- Основной расчёт ---
+    function calc() {
+      let bulk = parseFloat(document.getElementById('bulkInput').value) || 0;
+      let speed = parseFloat(document.getElementById('speedInput').value) || 1;
+      let luck = parseFloat(document.getElementById('luckInput').value) || 0;
+
       let bulkBoost = document.getElementById('bulkBoost').checked ? 2 : 1;
       let speedBoost = document.getElementById('speedBoost').checked ? 2 : 1;
       let luckBoost = document.getElementById('luckBoost').checked ? 2 : 1;
 
-      // --- Применяем бусты ---
       let finalBulk = bulk * bulkBoost;
-      let finalSpeed = speed / speedBoost;  // скорость улучшается (делится)
+      let finalSpeed = speed / speedBoost;
       let finalLuck = luck * luckBoost;
 
-      // --- RPS = Bulk / Speed (чем больше Speed, тем хуже) ---
       let rps = finalBulk / finalSpeed;
-
-      // --- Итоговый рейтинг с учётом удачи (как бонус к эффективности) ---
-      // Удача даёт +X% к RPS (например, 20% удачи = +20% к результату)
       let rating = rps * (1 + finalLuck / 100);
 
-      // --- Отображаем ---
-      document.getElementById('bulkVal').textContent = finalBulk;
-      document.getElementById('speedVal').textContent = finalSpeed.toFixed(1);
-      document.getElementById('luckVal').textContent = finalLuck;
+      document.getElementById('rps').textContent = '⚡ RPS: ' + formatNumber(rps);
+      document.getElementById('rating').textContent = '⭐ Эффективность: ' + formatNumber(rating);
 
-      document.getElementById('rps').textContent = '⚡ RPS: ' + rps.toFixed(2);
-      document.getElementById('rating').textContent = '⭐ Эффективность (с удачей): ' + rating.toFixed(2);
+      const tbody = document.getElementById('runeBody');
+      tbody.innerHTML = '';
+
+      for (let rune of RUNES) {
+        // Вычисляем время до выпадения
+        let timeToDrop = rune.threshold / rps;
+        
+        // Определяем цвет редкости по рангу
+        let rankColor = '#aaa';
+        if (rune.rank <= 2) rankColor = '#8f8';
+        else if (rune.rank <= 4) rankColor = '#8cf';
+        else if (rune.rank <= 6) rankColor = '#c8f';
+        else if (rune.rank <= 8) rankColor = '#f8f';
+        else if (rune.rank <= 10) rankColor = '#f84';
+        else if (rune.rank <= 11) rankColor = '#f44';
+        else if (rune.rank >= 12) rankColor = '#ff8';
+
+        const row = document.createElement('tr');
+        row.innerHTML = `
+          <td style="color: ${rankColor};">#${rune.rank}</td>
+          <td class="rune-name">${rune.name}</td>
+          <td class="rune-rarity">${formatNumber(rune.threshold)}</td>
+          <td class="rune-time">${formatTime(timeToDrop)}</td>
+        `;
+        tbody.appendChild(row);
+      }
     }
 
     calc();
