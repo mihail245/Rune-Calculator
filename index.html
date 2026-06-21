@@ -10,7 +10,7 @@
             background-color: #121214;
             color: #e0e0e6;
             margin: 0;
-            padding: 20px;
+            padding: 15px;
             display: flex;
             justify-content: center;
         }
@@ -18,7 +18,7 @@
             width: 100%;
             max-width: 650px;
             background: #1a1a1e;
-            padding: 25px;
+            padding: 20px;
             border-radius: 12px;
             box-shadow: 0 8px 24px rgba(0,0,0,0.5);
             border: 1px solid #2d2d35;
@@ -27,6 +27,7 @@
             text-align: center;
             color: #fff;
             margin-bottom: 20px;
+            font-size: 22px;
         }
         .input-group {
             margin-bottom: 15px;
@@ -39,7 +40,7 @@
         }
         input {
             width: 100%;
-            padding: 10px;
+            padding: 12px;
             box-sizing: border-box;
             background: #26262b;
             border: 1px solid #3a3a42;
@@ -53,28 +54,35 @@
         }
         .grid-header {
             display: grid;
-            grid-template-columns: 2fr 1fr 2fr;
+            grid-template-columns: 1.5fr 1fr 1.5fr;
             font-weight: bold;
             border-bottom: 2px solid #3a3a42;
             padding: 10px 5px;
             margin-top: 25px;
             color: #fff;
+            font-size: 15px;
         }
         .rune-row {
             display: grid;
-            grid-template-columns: 2fr 1fr 2fr;
-            padding: 10px 5px;
+            grid-template-columns: 1.5fr 1fr 1.5fr;
+            padding: 12px 5px;
             border-bottom: 1px solid #26262b;
             align-items: center;
         }
         .rune-name {
             font-weight: bold;
-            text-shadow: 0 0 5px rgba(0,0,0,0.8);
+            font-size: 16px;
+            text-shadow: 0 0 8px rgba(0,0,0,0.5);
+        }
+        .rune-chance {
+            color: #bbb;
+            font-size: 14px;
         }
         .time-eta {
             font-family: monospace;
             font-size: 14px;
             color: #00ffaa;
+            word-break: break-all;
         }
     </style>
 </head>
@@ -89,23 +97,36 @@
     </div>
     
     <div class="input-group">
-        <label for="luck">Удача рун (Rune Luck множитель, например 1 или 2.5):</label>
+        <label for="luck">Удача рун (Rune Luck множитель):</label>
         <input type="number" id="luck" value="1" step="0.1" min="0.01" oninput="calculateETA()">
     </div>
 
     <div class="grid-header">
         <div>Руна</div>
         <div>Шанс</div>
-        <div>Ожидаемое время (ETA)</div>
+        <div>Ожидаемое время</div>
     </div>
     
     <div id="runes-list"></div>
 </div>
 
-<!-- Подключаем наш отдельный файл с рунами -->
-<script src="runes.js"></script>
 <script>
-    // Функция красивого форматирования времени
+    // База данных вшита прямо в код, чтобы не блокировалась браузером
+    const runesDatabase = [
+        { name: "Rookie", chance: 1.25, displayChance: "1/1.25", color: "#e1cbff" },
+        { name: "Learner", chance: 6.67, displayChance: "1/6.67", color: "#00e600" },
+        { name: "Trained", chance: 10, displayChance: "1/10", color: "#0080ff" },
+        { name: "Skilled", chance: 10, displayChance: "1/10", color: "#b300b3" },
+        { name: "Expert", chance: 10, displayChance: "1/10", color: "#ffaa00" },
+        { name: "Master", chance: 10, displayChance: "1/10", color: "#ff0000" },
+        { name: "Grandmaster", chance: 10, displayChance: "1/10", color: "#ff5500" },
+        { name: "Celestial", chance: 10, displayChance: "1/10", color: "#ff00ff" },
+        { name: "Immortal", chance: 115990000000, displayChance: "1/115.99B", color: "#00bfff" },
+        { name: "Shadow", chance: 1e21, displayChance: "1/10Sx", color: "#9d4edd" },
+        { name: "Phantom", chance: 1e29, displayChance: "1/100Oc", color: "#ff007f" },
+        { name: "Atomic", chance: 1.33e60, displayChance: "1/1.33QnDe", color: "#af40ff" }
+    ];
+
     function formatTime(seconds) {
         if (seconds === Infinity || isNaN(seconds)) return "Никогда";
         if (seconds < 60) return `${seconds.toFixed(1)} сек`;
@@ -120,38 +141,35 @@
         if (days < 365) return `${Math.floor(days)} дн ${Math.floor(hours % 24)} ч`;
         
         let years = days / 365;
+        if (years < 1e6) return `${Math.floor(years).toLocaleString()} лет`;
         return `${years.toExponential(2)} лет`;
     }
 
-    // Логика расчета
     function calculateETA() {
         const speed = parseFloat(document.getElementById('speed').value) || 1;
         const luck = parseFloat(document.getElementById('luck').value) || 1;
         const listContainer = document.getElementById('runes-list');
         
-        listContainer.innerHTML = ""; // Очищаем список перед пересчетом
+        listContainer.innerHTML = ""; 
 
         runesDatabase.forEach(rune => {
-            // Формула: Реальный шанс = Базовый шанс / Удачу
-            // Время (сек) = Реальный шанс * Скорость броска
             let realChance = rune.chance / luck;
-            if (realChance < 1) realChance = 1; // Шанс не может быть чаще чем 1/1
+            if (realChance < 1) realChance = 1; 
             
             let etaSeconds = realChance * speed;
 
-            // Создаем строку для таблицы
             const row = document.createElement('div');
             row.className = 'rune-row';
             row.innerHTML = `
                 <div class="rune-name" style="color: ${rune.color}">${rune.name}</div>
-                <div>${rune.displayChance}</div>
+                <div class="rune-chance">${rune.displayChance}</div>
                 <div class="time-eta">${formatTime(etaSeconds)}</div>
             `;
             listContainer.appendChild(row);
         });
     }
 
-    // Запускаем расчет при первой загрузке страницы
+    // Запуск расчета сразу при открытии
     window.onload = calculateETA;
 </script>
 
